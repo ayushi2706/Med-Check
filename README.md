@@ -14,7 +14,7 @@ Communication: Serial Protocol (via pyserial)
 
 UX Design: Figma
 
-🛠️ System Architecture
+**🛠️ System Architecture**
 
 Detection Layer (C++): An ESP32-CAM monitors the medication station. When pixels change, motion is detected, and a signal is triggered.
 
@@ -22,7 +22,7 @@ Integration Layer (Serial): The hardware sends an asynchronous interrupt signal 
 
 Application Layer (Python): A multi-threaded dashboard listens for incoming signals, processes the event, updates the UI state in real-time, and persists the data to an audit log.
 
-⚡ Features
+**⚡ Features**
 
 Real-time Monitoring: Immediate UI feedback (Red/Green state) upon medication detection.
 

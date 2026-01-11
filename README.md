@@ -6,19 +6,21 @@ Pill Pal is an end-to-end hardware-software integration designed to improve pati
 
 Backend Logic: Python
 
-Hardware Interface (ESP32-CAM): Python (ESP32-CAM)
+Hardware (Camera Module): ESP32-CAM
+
+Image Processing: OpenCV (cv2), NumPy
 
 GUI Framework: Tkinter
 
-Communication: Serial Protocol (via pyserial)
+Communication: HTTP image capture (ESP32 web server)
 
 UX Design: Figma
 
 **🛠️ System Architecture**
 
-Detection Layer (C++): An ESP32-CAM monitors the medication station. When pixels change, motion is detected, and a signal is triggered.
+Detection Layer (ESP32-CAM): The ESP32-CAM continuously hosts a small HTTP server that gives image captures from live footage.
 
-Integration Layer (Serial): The hardware sends an asynchronous interrupt signal (MOTION_DETECTED) over USB-to-TTL.
+Vision Processing Layer (Python): Python program continuously requests images from the ESP32-CAM IP address. A constant rolling buffer of images is maintained, and ‘pills taken’/motion detected is identified by checking for significant pixel change using Open CV.
 
 Application Layer (Python): A multi-threaded dashboard listens for incoming signals, processes the event, updates the UI state in real-time, and persists the data to an audit log.
 
@@ -30,4 +32,4 @@ Automatic Reset: State-tracking logic that resets medication status daily.
 
 Audit Logging: Time-stamped persistence of all medication events for caregiver review.
 
-Multi-threaded Execution: Background hardware listening ensures the GUI remains responsive.
+Multi-threaded Execution: Background image polling requests and image processing run in a separate thread ensuring the GUI remains responsive.

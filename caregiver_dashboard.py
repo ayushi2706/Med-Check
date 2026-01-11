@@ -2,6 +2,7 @@ import tkinter as tk
 from datetime import datetime
 import serial
 import threading
+from twilio.rest import Client #
 
 class care_giver_dashboard():
 
@@ -12,6 +13,12 @@ class care_giver_dashboard():
         root.configure(bg="#2c3e50")
 
         self.dose_taken_today = False
+
+        #twilio
+        self.account_sid = 'AC4d0b572b3a1ca0dc3f83d94308c873c4'
+        self.auth_token = 'ee691be6d20ad3ee943d7b3dae99895a'
+        self.twilio_num = '+16205221963'
+        self.my_num = '+16475134211'
 
         #status display
         self.status_frame = tk.Frame(root, bg="red", height=150)
@@ -59,6 +66,18 @@ class care_giver_dashboard():
                 except:
                     pass
 
+    def send_sms(self, timestamp):
+        try:
+            client = Client(self.account_sid, self.auth_token)
+            message = client.messages.create(
+                body=f"Med-Check Alert: Medication recorded at {timestamp}.",
+                from_=self.twilio_num,
+                to=self.my_num
+            )
+            self.root.after(0, lambda: self.log.insert(tk.END, f">>> SMS SENT: {message.sid[:8]}\n"))
+        except Exception as e:
+            self.root.after(0, lambda: self.log.insert(tk.END, f">>> SMS ERROR: Check internet/keys\n"))
+
     def record_dose(self):
 
         #if meds not already taken 
@@ -75,6 +94,7 @@ class care_giver_dashboard():
             self.test_btn.config(state="disabled")
             
             self.save_to_file(timestamp) #save to log
+            threading.Thread(target=self.send_sms, args=(timestamp,), daemon=True).start() #text
         else:
             self.log.insert(tk.END, "Note: Additional motion ignored.\n")
 

@@ -6,7 +6,7 @@ Pill Pal is an end-to-end hardware-software integration designed to improve pati
 
 Backend Logic: Python
 
-Hardware Interface: C++ (ESP32-CAM)
+Hardware Interface (ESP32-CAM): Python (ESP32-CAM)
 
 GUI Framework: Tkinter
 

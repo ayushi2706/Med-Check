@@ -1,8 +1,13 @@
+# IMPORT LIBRARIES
+# ------------------------------
+import time
 import tkinter as tk
 from datetime import datetime
-import serial
 import threading
-from twilio.rest import Client #
+from twilio.rest import Client
+import pill_detect
+# ------------------------------
+
 
 class care_giver_dashboard():
 
@@ -13,6 +18,7 @@ class care_giver_dashboard():
         root.configure(bg="#2c3e50")
 
         self.dose_taken_today = False
+        self.ignore_logged_today = False
 
         #twilio
         self.account_sid = 'AC4d0b572b3a1ca0dc3f83d94308c873c4'
@@ -39,32 +45,25 @@ class care_giver_dashboard():
         self.reset_btn = tk.Button(root, text="Manual Reset", command=self.reset_system, font=("Arial", 10))
         self.reset_btn.pack(pady=5)
 
-        #serial setup
-        try:
-            # Note: For Mac, this is often '/dev/cu.usbserial-...' not 'COM3'
-            self.ser = serial.Serial('COM3', 115200, timeout=1)
-            self.log.insert(tk.END, "Connected to Hardware... Monitoring started.\n")
-        except:
-            self.log.insert(tk.END, "Running in Simulation Mode (No Camera).\n")
-
         self.listen_thread = threading.Thread(target=self.listen_for_hardware, daemon=True)
         self.listen_thread.start()
 
     def listen_for_hardware(self):
+        # initialize cam images
+        pill_detect.initialize_images()
+
         while True:
-            #midnight reset
+            # midnight reset
             now_time = datetime.now().strftime("%H:%M")
             if now_time == "00:00":
                 self.root.after(0, self.reset_system)
 
-            #read fromm serial
-            if hasattr(self, 'ser') and self.ser.in_waiting > 0:
-                try:
-                    line = self.ser.readline().decode('utf-8').strip()
-                    if line == "MOTION_DETECTED":
-                        self.record_dose()
-                except:
-                    pass
+            pill_found = pill_detect.check_for_pill()
+
+            if pill_found:
+                self.root.after(0, self.record_dose)
+
+            time.sleep(1)
 
     def send_sms(self, timestamp):
         try:
@@ -83,6 +82,8 @@ class care_giver_dashboard():
         #if meds not already taken 
         if not self.dose_taken_today:
             self.dose_taken_today = True
+            self.ignore_logged_today = False
+            # pill_detect.pill_taken_today = True
             timestamp = datetime.now().strftime("%H:%M:%S")
             
             #ui update
@@ -96,14 +97,24 @@ class care_giver_dashboard():
             self.save_to_file(timestamp) #save to log
             threading.Thread(target=self.send_sms, args=(timestamp,), daemon=True).start() #text
         else:
-            self.log.insert(tk.END, "Note: Additional motion ignored.\n")
+            if not self.ignore_logged_today:
+                self.log.insert(tk.END, "Note: Additional motion ignored.\n")
+                self.ignore_logged_today = True
 
     def save_to_file(self, time_string):
         with open("med_history.txt", "a") as file:
             file.write(f"Medication taken at: {time_string}\n")
             
     def reset_system(self):
+        # pill_detect.detection_enabled = False
         self.dose_taken_today = False
+        self.ignore_logged_today = False
+
+        # pill_detect.reset_daily_state()
+        pill_detect.initialize_images()
+        # time.sleep(1)
+
+        # pill_detect.detection_enabled = True
         self.test_btn.config(state="normal") #reenable button
         self.status_frame.config(bg="red")
         self.status_text.config(text="MEDICATION LATE", bg="red")
@@ -113,4 +124,3 @@ if __name__ == "__main__":
     root = tk.Tk()
     app = care_giver_dashboard(root)
     root.mainloop()
-
